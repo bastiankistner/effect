@@ -33,6 +33,7 @@ import * as HttpClientRequest from "./HttpClientRequest.ts"
 import * as HttpIncomingMessage from "./HttpIncomingMessage.ts"
 import { hasBody, type HttpMethod } from "./HttpMethod.ts"
 import { HttpServerError, type RequestError, RequestParseError } from "./HttpServerError.ts"
+import * as MediaType from "./MediaType.ts"
 import * as Multipart from "./Multipart.ts"
 import * as UrlParams from "./UrlParams.ts"
 
@@ -250,9 +251,11 @@ export const schemaBodyJson = <A, RD>(
   return Effect.flatMap(HttpServerRequest, parse)
 }
 
-const isMultipart = (request: HttpServerRequest) =>
-  request.headers["content-type"]?.toLowerCase().includes("multipart/form-data") === true ||
-  getFormDataBody(request) !== undefined
+const isMultipart = (request: HttpServerRequest) => {
+  const contentType = MediaType.parse(request.headers["content-type"] ?? "")
+  return (Result.isSuccess(contentType) && MediaType.sameEssence(contentType.success, MediaType.multipartFormData)) ||
+    getFormDataBody(request) !== undefined
+}
 
 /**
  * Decodes the current request body as form data.
